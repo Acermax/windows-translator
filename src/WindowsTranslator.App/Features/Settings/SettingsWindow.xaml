@@ -1,0 +1,97 @@
+<Window x:Class="WindowsTranslator.App.Features.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Windows Translator Settings"
+        Width="640"
+        Height="760"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock FontWeight="SemiBold" FontSize="16" Text="Translation" Margin="0,0,0,12" />
+
+                <TextBlock Text="Endpoint" />
+                <TextBox x:Name="EndpointTextBox" Margin="0,3,0,10" />
+
+                <TextBlock Text="Model" />
+                <TextBox x:Name="ModelTextBox" Margin="0,3,0,10" />
+
+                <TextBlock Text="API key" />
+                <PasswordBox x:Name="ApiKeyPasswordBox" Margin="0,3,0,10" />
+
+                <TextBlock Text="Target language" />
+                <TextBox x:Name="TargetLanguageTextBox" Margin="0,3,0,10" />
+
+                <UniformGrid Columns="2" Margin="0,0,0,10">
+                    <StackPanel Margin="0,0,8,0">
+                        <TextBlock Text="Timeout seconds" />
+                        <TextBox x:Name="TimeoutTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="8,0,0,0">
+                        <TextBlock Text="Max input chars" />
+                        <TextBox x:Name="MaxInputTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="0,10,8,0">
+                        <TextBlock Text="Max output tokens" />
+                        <TextBox x:Name="MaxOutputTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                </UniformGrid>
+
+                <TextBlock FontWeight="SemiBold" FontSize="16" Text="Sampling" Margin="0,12,0,12" />
+                <UniformGrid Columns="3" Margin="0,0,0,10">
+                    <StackPanel Margin="0,0,8,0">
+                        <TextBlock Text="Temperature" />
+                        <TextBox x:Name="TemperatureTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="8,0,8,0">
+                        <TextBlock Text="Top P" />
+                        <TextBox x:Name="TopPTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="8,0,0,0">
+                        <TextBlock Text="Top K" />
+                        <TextBox x:Name="TopKTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="0,10,8,0">
+                        <TextBlock Text="Min P" />
+                        <TextBox x:Name="MinPTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="8,10,8,0">
+                        <TextBlock Text="Presence penalty" />
+                        <TextBox x:Name="PresencePenaltyTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="8,10,0,0">
+                        <TextBlock Text="Repetition penalty" />
+                        <TextBox x:Name="RepetitionPenaltyTextBox" Margin="0,3,0,0" />
+                    </StackPanel>
+                </UniformGrid>
+
+                <TextBlock FontWeight="SemiBold" FontSize="16" Text="Reasoning" Margin="0,12,0,12" />
+                <CheckBox x:Name="EnableThinkingCheckBox" Content="Enable Qwen thinking" Margin="0,0,0,8" />
+                <CheckBox x:Name="IncludeReasoningCheckBox" Content="Request reasoning field from vLLM" Margin="0,0,0,8" />
+                <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For Qwen3.6, thinking is controlled by chat_template_kwargs.enable_thinking. The app discards reasoning and displays only message.content." />
+
+                <TextBlock FontWeight="SemiBold" FontSize="16" Text="Hotkey" Margin="0,18,0,12" />
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <CheckBox x:Name="CtrlCheckBox" Content="Ctrl" Margin="0,0,18,0" />
+                    <CheckBox x:Name="AltCheckBox" Content="Alt" Margin="0,0,18,0" />
+                    <CheckBox x:Name="ShiftCheckBox" Content="Shift" Margin="0,0,18,0" />
+                    <CheckBox x:Name="WinCheckBox" Content="Win" Margin="0,0,18,0" />
+                    <TextBlock Text="Key" VerticalAlignment="Center" Margin="10,0,8,0" />
+                    <TextBox x:Name="HotkeyKeyTextBox" Width="80" />
+                </StackPanel>
+
+                <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For local vLLM without auth, leave API key empty. The model must match the model name served by vLLM." />
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancel" MinWidth="90" Margin="0,0,8,0" Click="CancelButton_Click" />
+            <Button Content="Save" MinWidth="90" Click="SaveButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
