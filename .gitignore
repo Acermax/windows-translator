@@ -5,3 +5,11 @@ obj/
 *.user
 *.suo
 TestResults/
+.env
+.env.*
+!.env.example
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+settings.json
+*.local.json

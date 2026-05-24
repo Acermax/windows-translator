@@ -44,4 +44,6 @@ On first run the app creates `%APPDATA%\WindowsTranslator\settings.json` with de
 - Configure `translation.enableThinking` and `translation.includeReasoning` for Qwen reasoning models.
 - Configure sampling with `temperature`, `topP`, `topK`, `minP`, `presencePenalty`, and `repetitionPenalty`.
 
+Do not commit local settings files containing API keys. `.gitignore` excludes common local config files such as `settings.json`, `appsettings.json`, `.env`, and `*.local.json`.
+
 For Qwen reasoning models served by vLLM, `enableThinking` is sent as `chat_template_kwargs.enable_thinking`. The app discards `message.reasoning` and displays only `message.content`.

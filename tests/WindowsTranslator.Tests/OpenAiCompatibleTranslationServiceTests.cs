@@ -39,7 +39,7 @@ public sealed class OpenAiCompatibleTranslationServiceTests
         {
             Endpoint = "http://localhost:8000/v1/chat/completions",
             Model = "served-model",
-            ApiKey = "secret",
+            ApiKey = "test-api-key",
             TargetLanguage = "Spanish",
             Temperature = 0.6,
             TopP = 0.95,
@@ -58,7 +58,7 @@ public sealed class OpenAiCompatibleTranslationServiceTests
         Assert.Equal("served-model", result.Model);
         Assert.Equal(HttpMethod.Post, capturedRequest!.Method);
         Assert.Equal("http://localhost:8000/v1/chat/completions", capturedRequest.RequestUri!.ToString());
-        Assert.Equal(new AuthenticationHeaderValue("Bearer", "secret"), capturedRequest.Headers.Authorization);
+        Assert.Equal(new AuthenticationHeaderValue("Bearer", "test-api-key"), capturedRequest.Headers.Authorization);
 
         var json = JsonNode.Parse(capturedBody!)!;
         Assert.Equal("served-model", json["model"]!.GetValue<string>());
