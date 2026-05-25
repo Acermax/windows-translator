@@ -15,14 +15,34 @@
             <StackPanel>
                 <TextBlock FontWeight="SemiBold" FontSize="16" Text="Translation" Margin="0,0,0,12" />
 
-                <TextBlock Text="Endpoint" />
+                <TextBlock Text="Endpoint (/v1 or chat completions)" />
                 <TextBox x:Name="EndpointTextBox" Margin="0,3,0,10" />
-
-                <TextBlock Text="Model" />
-                <TextBox x:Name="ModelTextBox" Margin="0,3,0,10" />
 
                 <TextBlock Text="API key" />
                 <PasswordBox x:Name="ApiKeyPasswordBox" Margin="0,3,0,10" />
+
+                <TextBlock Text="Model" />
+                <Grid Margin="0,3,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="ModelComboBox"
+                              IsEditable="True"
+                              IsTextSearchEnabled="True"
+                              StaysOpenOnEdit="True"
+                              VerticalContentAlignment="Center" />
+                    <Button x:Name="RefreshModelsButton"
+                            Grid.Column="1"
+                            Content="Refresh"
+                            MinWidth="86"
+                            Margin="8,0,0,0"
+                            Click="RefreshModelsButton_Click" />
+                </Grid>
+                <TextBlock x:Name="ModelsStatusTextBlock"
+                           Foreground="#666666"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,10" />
 
                 <TextBlock Text="Target language" />
                 <TextBox x:Name="TargetLanguageTextBox" Margin="0,3,0,10" />
@@ -85,7 +105,7 @@
                     <TextBox x:Name="HotkeyKeyTextBox" Width="80" />
                 </StackPanel>
 
-                <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For local vLLM without auth, leave API key empty. The model must match the model name served by vLLM." />
+                <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For local vLLM without auth, leave API key empty. Use Refresh to load served models, or type a model name manually." />
             </StackPanel>
         </ScrollViewer>
 

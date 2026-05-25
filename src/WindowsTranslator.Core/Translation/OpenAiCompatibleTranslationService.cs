@@ -35,10 +35,12 @@ public sealed class OpenAiCompatibleTranslationService : ITranslationService
             throw new TranslationException($"Selected text is too long. Limit: {_settings.MaxInputCharacters} characters.");
         }
 
-        if (!Uri.TryCreate(_settings.Endpoint, UriKind.Absolute, out var endpoint))
+        if (!Uri.TryCreate(_settings.Endpoint, UriKind.Absolute, out var configuredEndpoint))
         {
             throw new TranslationException($"Invalid translation endpoint: {_settings.Endpoint}");
         }
+
+        var endpoint = OpenAiCompatibleEndpointBuilder.BuildChatCompletionsUri(configuredEndpoint);
 
         var targetLanguage = string.IsNullOrWhiteSpace(request.TargetLanguage)
             ? _settings.TargetLanguage

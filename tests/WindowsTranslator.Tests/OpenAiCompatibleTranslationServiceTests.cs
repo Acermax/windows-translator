@@ -97,6 +97,30 @@ public sealed class OpenAiCompatibleTranslationServiceTests
     }
 
     [Fact]
+    public async Task TranslateAsync_NormalizesV1BaseEndpoint_ToChatCompletions()
+    {
+        Uri? capturedUri = null;
+        var handler = new StubHttpMessageHandler((request, _) =>
+        {
+            capturedUri = request.RequestUri;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"choices\":[{\"message\":{\"content\":\"Hola\"}}]}", Encoding.UTF8, "application/json")
+            });
+        });
+
+        var settings = new TranslationSettings
+        {
+            Endpoint = "http://localhost:8001/v1/"
+        };
+        var service = new OpenAiCompatibleTranslationService(new HttpClient(handler), settings);
+
+        await service.TranslateAsync(new TranslationRequest("Hello"), CancellationToken.None);
+
+        Assert.Equal("http://localhost:8001/v1/chat/completions", capturedUri!.ToString());
+    }
+
+    [Fact]
     public async Task TranslateAsync_IgnoresReasoning_WhenContentExists()
     {
         var handler = new StubHttpMessageHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)

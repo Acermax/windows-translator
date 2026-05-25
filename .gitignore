@@ -5,6 +5,9 @@ obj/
 *.user
 *.suo
 TestResults/
+.dotnet/
+.nuget/
+publish/
 .env
 .env.*
 !.env.example

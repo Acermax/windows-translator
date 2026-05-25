@@ -1,17 +1,22 @@
 using System.Globalization;
+using System.Net.Http;
 using System.Windows;
 using WindowsTranslator.Core.Settings;
+using WindowsTranslator.Core.Translation;
 
 namespace WindowsTranslator.App.Features.Settings;
 
 public partial class SettingsWindow : Window
 {
+    private CancellationTokenSource? _modelsCancellation;
+
     public SettingsWindow(AppSettings settings)
     {
         Settings = settings;
         Settings.Normalize();
         InitializeComponent();
         LoadSettings();
+        Loaded += SettingsWindow_Loaded;
     }
 
     public AppSettings Settings { get; }
@@ -19,8 +24,10 @@ public partial class SettingsWindow : Window
     private void LoadSettings()
     {
         EndpointTextBox.Text = Settings.Translation.Endpoint;
-        ModelTextBox.Text = Settings.Translation.Model;
         ApiKeyPasswordBox.Password = Settings.Translation.ApiKey;
+        ModelComboBox.Items.Add(Settings.Translation.Model);
+        ModelComboBox.Text = Settings.Translation.Model;
+        ModelsStatusTextBlock.Text = "Refresh to load models from the configured endpoint.";
         TargetLanguageTextBox.Text = Settings.Translation.TargetLanguage;
         TimeoutTextBox.Text = Settings.Translation.TimeoutSeconds.ToString();
         MaxInputTextBox.Text = Settings.Translation.MaxInputCharacters.ToString();
@@ -39,6 +46,16 @@ public partial class SettingsWindow : Window
         ShiftCheckBox.IsChecked = Settings.Hotkey.Shift;
         WinCheckBox.IsChecked = Settings.Hotkey.Win;
         HotkeyKeyTextBox.Text = Settings.Hotkey.Key;
+    }
+
+    private async void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        await RefreshModelsAsync(showSuccess: false);
+    }
+
+    private async void RefreshModelsButton_Click(object sender, RoutedEventArgs e)
+    {
+        await RefreshModelsAsync(showSuccess: true);
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -98,7 +115,7 @@ public partial class SettingsWindow : Window
         }
 
         Settings.Translation.Endpoint = EndpointTextBox.Text;
-        Settings.Translation.Model = ModelTextBox.Text;
+        Settings.Translation.Model = ModelComboBox.Text;
         Settings.Translation.ApiKey = ApiKeyPasswordBox.Password;
         Settings.Translation.TargetLanguage = TargetLanguageTextBox.Text;
         Settings.Translation.TimeoutSeconds = timeoutSeconds;
@@ -128,6 +145,84 @@ public partial class SettingsWindow : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _modelsCancellation?.Cancel();
+        _modelsCancellation?.Dispose();
+        base.OnClosed(e);
+    }
+
+    private async Task RefreshModelsAsync(bool showSuccess)
+    {
+        _modelsCancellation?.Cancel();
+        _modelsCancellation?.Dispose();
+        _modelsCancellation = new CancellationTokenSource();
+        var cancellationToken = _modelsCancellation.Token;
+
+        var currentModel = ModelComboBox.Text.Trim();
+        RefreshModelsButton.IsEnabled = false;
+        ModelsStatusTextBlock.Text = "Loading models...";
+
+        try
+        {
+            using var httpClient = new HttpClient();
+            var modelService = new OpenAiCompatibleModelService(httpClient, CreateModelLookupSettings());
+            var models = await modelService.ListModelsAsync(cancellationToken);
+
+            ModelComboBox.Items.Clear();
+            foreach (var model in models)
+            {
+                ModelComboBox.Items.Add(model);
+            }
+
+            if (!string.IsNullOrWhiteSpace(currentModel))
+            {
+                ModelComboBox.Text = currentModel;
+            }
+            else if (models.Count > 0)
+            {
+                ModelComboBox.SelectedIndex = 0;
+            }
+
+            ModelsStatusTextBlock.Text = showSuccess
+                ? $"Loaded {models.Count} model(s)."
+                : string.Empty;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex) when (ex is TranslationException or HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            ModelsStatusTextBlock.Text = $"Could not load models: {ex.Message}";
+        }
+        finally
+        {
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                RefreshModelsButton.IsEnabled = true;
+            }
+        }
+    }
+
+    private TranslationSettings CreateModelLookupSettings()
+    {
+        var settings = new TranslationSettings
+        {
+            Endpoint = EndpointTextBox.Text,
+            Model = ModelComboBox.Text,
+            ApiKey = ApiKeyPasswordBox.Password,
+            TimeoutSeconds = Settings.Translation.TimeoutSeconds
+        };
+
+        if (int.TryParse(TimeoutTextBox.Text, out var timeoutSeconds))
+        {
+            settings.TimeoutSeconds = timeoutSeconds;
+        }
+
+        settings.Normalize();
+        return settings;
     }
 
     private static void ShowValidationError(string message)
