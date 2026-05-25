@@ -1,6 +1,8 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using WindowsTranslator.App.Infrastructure.Windows;
 using WindowsTranslator.Core.Translation;
 
 namespace WindowsTranslator.App.Features.Popup;
@@ -59,11 +61,27 @@ public partial class TranslationPopup : Window
         return compact.Length <= 240 ? compact : compact[..240] + "...";
     }
 
-    private void CopyButton_Click(object sender, RoutedEventArgs e)
+    private async void CopyButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(TranslationTextBox.Text))
+        if (string.IsNullOrWhiteSpace(TranslationTextBox.Text))
         {
-            System.Windows.Clipboard.SetText(TranslationTextBox.Text);
+            return;
+        }
+
+        CopyButton.IsEnabled = false;
+
+        try
+        {
+            await ClipboardTextService.SetTextAsync(TranslationTextBox.Text, CancellationToken.None);
+            StatusTextBlock.Text = "Copiado al portapapeles";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ExternalException)
+        {
+            StatusTextBlock.Text = $"No se pudo copiar: {ex.Message}";
+        }
+        finally
+        {
+            CopyButton.IsEnabled = true;
         }
     }
 

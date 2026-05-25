@@ -19,7 +19,7 @@ internal sealed class SelectionReplacementService
             throw new InvalidOperationException("There is no replacement text.");
         }
 
-        System.Windows.Clipboard.SetText(replacementText);
+        await ClipboardTextService.SetTextAsync(replacementText, cancellationToken);
 
         if (!NativeMethods.SetForegroundWindow(targetWindowHandle))
         {
