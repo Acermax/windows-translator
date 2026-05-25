@@ -50,7 +50,7 @@ public sealed class OpenAiCompatibleTranslationService : ITranslationService
             _settings.Model,
             [
                 new ChatMessage("system", TranslationPromptBuilder.SystemPrompt),
-                new ChatMessage("user", TranslationPromptBuilder.BuildUserPrompt(request.Text, targetLanguage))
+                new ChatMessage("user", TranslationPromptBuilder.BuildUserPrompt(request.Text, targetLanguage, request.Action))
             ],
             _settings.Temperature,
             _settings.TopP,

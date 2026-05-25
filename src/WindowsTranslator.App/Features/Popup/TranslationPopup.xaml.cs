@@ -7,34 +7,50 @@ namespace WindowsTranslator.App.Features.Popup;
 
 public partial class TranslationPopup : Window
 {
+    private bool _hasSourceText;
+
     public TranslationPopup()
     {
         InitializeComponent();
     }
 
     public event EventHandler? OptionsRequested;
+    public event EventHandler<TextActionRequestedEventArgs>? TextActionRequested;
+    public event EventHandler? ReplaceRequested;
 
-    public void SetLoading(string sourceText)
+    public void SetLoading(string sourceText, TextProcessingAction action)
     {
-        StatusTextBlock.Text = "Traduciendo...";
+        _hasSourceText = true;
+        StatusTextBlock.Text = $"{GetActionLabel(action)}...";
         OriginalTextBlock.Text = BuildPreview(sourceText);
         TranslationTextBox.Text = string.Empty;
         CopyButton.IsEnabled = false;
+        ReplaceButton.IsEnabled = false;
+        SetActionButtonsEnabled(false);
     }
 
-    public void SetResult(TranslationResult result)
+    public void SetResult(TranslationResult result, TextProcessingAction action)
     {
-        StatusTextBlock.Text = $"Traduccion lista ({result.Duration.TotalSeconds:0.0}s)";
+        StatusTextBlock.Text = $"{GetActionLabel(action)} listo ({result.Duration.TotalSeconds:0.0}s)";
         TranslationTextBox.Text = result.Text;
         CopyButton.IsEnabled = true;
+        ReplaceButton.IsEnabled = true;
+        SetActionButtonsEnabled(true);
     }
 
-    public void SetError(string message)
+    public void SetError(string message, bool canRunActions)
     {
+        _hasSourceText = canRunActions;
         StatusTextBlock.Text = "Error";
-        OriginalTextBlock.Text = string.Empty;
+        if (!canRunActions)
+        {
+            OriginalTextBlock.Text = string.Empty;
+        }
+
         TranslationTextBox.Text = message;
         CopyButton.IsEnabled = false;
+        ReplaceButton.IsEnabled = false;
+        SetActionButtonsEnabled(canRunActions);
     }
 
     private static string BuildPreview(string text)
@@ -49,6 +65,31 @@ public partial class TranslationPopup : Window
         {
             System.Windows.Clipboard.SetText(TranslationTextBox.Text);
         }
+    }
+
+    private void TranslateButton_Click(object sender, RoutedEventArgs e)
+    {
+        RequestTextAction(TextProcessingAction.Translate);
+    }
+
+    private void ReverseButton_Click(object sender, RoutedEventArgs e)
+    {
+        RequestTextAction(TextProcessingAction.TranslateToEnglish);
+    }
+
+    private void GrammarButton_Click(object sender, RoutedEventArgs e)
+    {
+        RequestTextAction(TextProcessingAction.CorrectGrammar);
+    }
+
+    private void ImproveButton_Click(object sender, RoutedEventArgs e)
+    {
+        RequestTextAction(TextProcessingAction.ImproveWriting);
+    }
+
+    private void ReplaceButton_Click(object sender, RoutedEventArgs e)
+    {
+        ReplaceRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -84,6 +125,36 @@ public partial class TranslationPopup : Window
         {
             Close();
         }
+    }
+
+    private void RequestTextAction(TextProcessingAction action)
+    {
+        if (!_hasSourceText)
+        {
+            return;
+        }
+
+        TextActionRequested?.Invoke(this, new TextActionRequestedEventArgs(action));
+    }
+
+    private void SetActionButtonsEnabled(bool isEnabled)
+    {
+        TranslateButton.IsEnabled = isEnabled;
+        ReverseButton.IsEnabled = isEnabled;
+        GrammarButton.IsEnabled = isEnabled;
+        ImproveButton.IsEnabled = isEnabled;
+    }
+
+    private static string GetActionLabel(TextProcessingAction action)
+    {
+        return action switch
+        {
+            TextProcessingAction.Translate => "Traduccion",
+            TextProcessingAction.TranslateToEnglish => "A ingles",
+            TextProcessingAction.CorrectGrammar => "Gramatica",
+            TextProcessingAction.ImproveWriting => "Mejora",
+            _ => "Texto"
+        };
     }
 
     private static bool IsInsideButton(DependencyObject? source)

@@ -18,6 +18,13 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     internal static extern IntPtr GetForegroundWindow();
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    internal static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool AttachConsole(uint dwProcessId);
@@ -41,4 +48,14 @@ internal static class NativeMethods
         CtrlShutdown = 6
     }
 
+    internal static class VirtualKey
+    {
+        public const byte Control = 0x11;
+        public const byte V = 0x56;
+    }
+
+    internal static class KeyEvent
+    {
+        public const uint KeyUp = 0x0002;
+    }
 }

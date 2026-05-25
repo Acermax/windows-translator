@@ -2,9 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Windows Translator"
-        Width="440"
+        Width="560"
         SizeToContent="Height"
-        MaxHeight="460"
+        MaxHeight="520"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -23,65 +23,102 @@
         </Border.Effect>
 
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <DockPanel x:Name="HeaderPanel"
-                       Grid.Row="0"
-                       LastChildFill="True"
-                       Background="Transparent"
-                       MouseLeftButtonDown="HeaderPanel_MouseLeftButtonDown">
-                <Button Content="X"
-                        Width="26"
-                        Height="26"
-                        DockPanel.Dock="Right"
-                        Click="CloseButton_Click" />
-                <Button Content="..."
-                        Width="26"
-                        Height="26"
-                        Margin="0,0,6,0"
-                        DockPanel.Dock="Right"
-                        ToolTip="Opciones"
-                        Click="OptionsButton_Click" />
-                <TextBlock x:Name="StatusTextBlock"
-                           FontWeight="SemiBold"
-                           FontSize="15"
-                           VerticalAlignment="Center"
-                           Text="Traduciendo..." />
-            </DockPanel>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <TextBlock x:Name="OriginalTextBlock"
-                       Grid.Row="1"
-                       Margin="0,10,0,8"
-                       Foreground="#666666"
-                       TextWrapping="Wrap" />
+                <DockPanel x:Name="HeaderPanel"
+                           Grid.Row="0"
+                           LastChildFill="True"
+                           Background="Transparent"
+                           MouseLeftButtonDown="HeaderPanel_MouseLeftButtonDown">
+                    <Button Content="X"
+                            Width="26"
+                            Height="26"
+                            DockPanel.Dock="Right"
+                            Click="CloseButton_Click" />
+                    <Button Content="..."
+                            Width="26"
+                            Height="26"
+                            Margin="0,0,6,0"
+                            DockPanel.Dock="Right"
+                            ToolTip="Opciones"
+                            Click="OptionsButton_Click" />
+                    <TextBlock x:Name="StatusTextBlock"
+                               FontWeight="SemiBold"
+                               FontSize="15"
+                               VerticalAlignment="Center"
+                               Text="Traduciendo..." />
+                </DockPanel>
 
-            <ScrollViewer Grid.Row="2" MaxHeight="290" VerticalScrollBarVisibility="Auto">
-                <TextBox x:Name="TranslationTextBox"
-                         IsReadOnly="True"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         TextWrapping="Wrap"
-                         FontSize="14"
-                         AcceptsReturn="True" />
-            </ScrollViewer>
+                <TextBlock x:Name="OriginalTextBlock"
+                           Grid.Row="1"
+                           Margin="0,10,0,8"
+                           Foreground="#666666"
+                           TextWrapping="Wrap" />
 
-            <StackPanel Grid.Row="3"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        Margin="0,12,0,0">
-                <Button x:Name="CopyButton"
-                        Content="Copiar"
-                        MinWidth="82"
-                        Margin="0,0,8,0"
-                        Click="CopyButton_Click" />
-                <Button Content="Cerrar"
-                        MinWidth="82"
-                        Click="CloseButton_Click" />
+                <ScrollViewer Grid.Row="2" MaxHeight="320" VerticalScrollBarVisibility="Auto">
+                    <TextBox x:Name="TranslationTextBox"
+                             IsReadOnly="True"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             TextWrapping="Wrap"
+                             FontSize="14"
+                             AcceptsReturn="True" />
+                </ScrollViewer>
+
+                <StackPanel Grid.Row="3"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Margin="0,12,0,0">
+                    <Button x:Name="CopyButton"
+                            Content="Copiar"
+                            MinWidth="82"
+                            Margin="0,0,8,0"
+                            Click="CopyButton_Click" />
+                    <Button Content="Cerrar"
+                            MinWidth="82"
+                            Click="CloseButton_Click" />
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Grid.Column="1"
+                        Width="112"
+                        Margin="14,0,0,0"
+                        VerticalAlignment="Top">
+                <Button x:Name="TranslateButton"
+                        Content="Traducir"
+                        MinHeight="30"
+                        Margin="0,0,0,8"
+                        Click="TranslateButton_Click" />
+                <Button x:Name="ReverseButton"
+                        Content="A ingles"
+                        MinHeight="30"
+                        Margin="0,0,0,8"
+                        Click="ReverseButton_Click" />
+                <Button x:Name="GrammarButton"
+                        Content="Gramatica"
+                        MinHeight="30"
+                        Margin="0,0,0,8"
+                        Click="GrammarButton_Click" />
+                <Button x:Name="ImproveButton"
+                        Content="Mejorar"
+                        MinHeight="30"
+                        Margin="0,0,0,16"
+                        Click="ImproveButton_Click" />
+                <Button x:Name="ReplaceButton"
+                        Content="Reemplazar"
+                        MinHeight="30"
+                        Click="ReplaceButton_Click" />
             </StackPanel>
         </Grid>
     </Border>

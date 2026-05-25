@@ -57,6 +57,21 @@ internal sealed class SelectedTextService
             }
         }
 
+        var valueFallbackVisited = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var element in GetValueFallbackCandidates(cursorPosition))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var valueText = TryGetWholeTextFromElementAndAncestors(
+                element,
+                settings.MaxSelectedTextCharacters,
+                valueFallbackVisited);
+            if (!string.IsNullOrWhiteSpace(valueText))
+            {
+                return valueText;
+            }
+        }
+
         return null;
     }
 
@@ -78,6 +93,21 @@ internal sealed class SelectedTextService
         if (foregroundWindow is not null)
         {
             yield return foregroundWindow;
+        }
+    }
+
+    private static IEnumerable<AutomationElement> GetValueFallbackCandidates(System.Windows.Point cursorPosition)
+    {
+        var focusedElement = TryGetFocusedElement();
+        if (focusedElement is not null)
+        {
+            yield return focusedElement;
+        }
+
+        var pointerElement = TryGetElementFromPoint(cursorPosition);
+        if (pointerElement is not null && !IsSameElement(focusedElement, pointerElement))
+        {
+            yield return pointerElement;
         }
     }
 
@@ -111,6 +141,29 @@ internal sealed class SelectedTextService
                 if (!string.IsNullOrWhiteSpace(selectedText))
                 {
                     return selectedText;
+                }
+            }
+
+            current = TryGetParent(current);
+        }
+
+        return null;
+    }
+
+    private static string? TryGetWholeTextFromElementAndAncestors(
+        AutomationElement element,
+        int maxCharacters,
+        HashSet<string> visited)
+    {
+        AutomationElement? current = element;
+        for (var depth = 0; current is not null && depth < 12; depth++)
+        {
+            if (MarkVisited(current, visited))
+            {
+                var text = TryGetWholeTextFromElement(current, maxCharacters);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text;
                 }
             }
 
@@ -214,6 +267,132 @@ internal sealed class SelectedTextService
         {
             return null;
         }
+    }
+
+    private static string? TryGetWholeTextFromElement(AutomationElement element, int maxCharacters)
+    {
+        try
+        {
+            if (!IsWholeTextCandidate(element))
+            {
+                return null;
+            }
+
+            var value = TryGetValuePatternText(element, maxCharacters);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            var documentText = TryGetTextPatternDocumentText(element, maxCharacters);
+            if (!string.IsNullOrWhiteSpace(documentText))
+            {
+                return documentText;
+            }
+
+            return TryGetNameText(element, maxCharacters);
+        }
+        catch (ElementNotAvailableException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (COMException)
+        {
+            return null;
+        }
+    }
+
+    private static string? TryGetValuePatternText(AutomationElement element, int maxCharacters)
+    {
+        if (!element.TryGetCurrentPattern(ValuePattern.Pattern, out var pattern) || pattern is not ValuePattern valuePattern)
+        {
+            return null;
+        }
+
+        return TrimAndLimit(valuePattern.Current.Value, maxCharacters);
+    }
+
+    private static string? TryGetTextPatternDocumentText(AutomationElement element, int maxCharacters)
+    {
+        var controlType = element.Current.ControlType;
+        if (controlType != ControlType.Edit
+            && controlType != ControlType.DataItem
+            && controlType != ControlType.Text)
+        {
+            return null;
+        }
+
+        if (!element.TryGetCurrentPattern(TextPattern.Pattern, out var pattern) || pattern is not TextPattern textPattern)
+        {
+            return null;
+        }
+
+        return TrimAndLimit(textPattern.DocumentRange.GetText(maxCharacters), maxCharacters);
+    }
+
+    private static string? TryGetNameText(AutomationElement element, int maxCharacters)
+    {
+        var controlType = element.Current.ControlType;
+        if (controlType != ControlType.Edit
+            && controlType != ControlType.DataItem
+            && controlType != ControlType.Text)
+        {
+            return null;
+        }
+
+        var name = TrimAndLimit(element.Current.Name, maxCharacters);
+        return IsLikelyCellAddress(name) ? null : name;
+    }
+
+    private static bool IsWholeTextCandidate(AutomationElement element)
+    {
+        var controlType = element.Current.ControlType;
+        return controlType == ControlType.Edit
+            || controlType == ControlType.DataItem
+            || controlType == ControlType.Text
+            || controlType == ControlType.Custom
+            || controlType == ControlType.Document;
+    }
+
+    private static string? TrimAndLimit(string? text, int maxCharacters)
+    {
+        if (string.IsNullOrWhiteSpace(text) || maxCharacters <= 0)
+        {
+            return null;
+        }
+
+        var trimmed = text.Trim();
+        return trimmed.Length <= maxCharacters ? trimmed : trimmed[..maxCharacters];
+    }
+
+    private static bool IsLikelyCellAddress(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || text.Length > 8)
+        {
+            return false;
+        }
+
+        var index = 0;
+        while (index < text.Length && char.IsAsciiLetter(text[index]))
+        {
+            index++;
+        }
+
+        if (index == 0 || index == text.Length)
+        {
+            return false;
+        }
+
+        while (index < text.Length && char.IsAsciiDigit(text[index]))
+        {
+            index++;
+        }
+
+        return index == text.Length;
     }
 
     private static string ReadRange(TextPatternRange range, int maxCharacters)
