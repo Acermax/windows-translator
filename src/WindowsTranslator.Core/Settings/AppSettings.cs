@@ -53,6 +53,10 @@ public sealed class CaptureSettings
 
     public int MaxAutomationElements { get; set; } = 1_500;
 
+    public bool UseClipboardFallback { get; set; }
+
+    public int ClipboardFallbackDelayMs { get; set; } = 160;
+
     public string Method { get; set; } = "UIAutomation";
 
     public void Normalize()
@@ -60,6 +64,7 @@ public sealed class CaptureSettings
         FocusSettleDelayMs = Math.Clamp(FocusSettleDelayMs, 0, 2_000);
         MaxSelectedTextCharacters = Math.Clamp(MaxSelectedTextCharacters, 100, 1_000_000);
         MaxAutomationElements = Math.Clamp(MaxAutomationElements, 10, 20_000);
+        ClipboardFallbackDelayMs = Math.Clamp(ClipboardFallbackDelayMs, 40, 2_000);
         Method = string.IsNullOrWhiteSpace(Method) ? "UIAutomation" : Method.Trim();
     }
 }

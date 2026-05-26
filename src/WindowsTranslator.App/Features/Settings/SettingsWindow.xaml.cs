@@ -40,6 +40,8 @@ public partial class SettingsWindow : Window
         RepetitionPenaltyTextBox.Text = FormatDouble(Settings.Translation.RepetitionPenalty);
         EnableThinkingCheckBox.IsChecked = Settings.Translation.EnableThinking;
         IncludeReasoningCheckBox.IsChecked = Settings.Translation.IncludeReasoning;
+        ClipboardFallbackCheckBox.IsChecked = Settings.Capture.UseClipboardFallback;
+        ClipboardFallbackDelayTextBox.Text = Settings.Capture.ClipboardFallbackDelayMs.ToString();
 
         CtrlCheckBox.IsChecked = Settings.Hotkey.Ctrl;
         AltCheckBox.IsChecked = Settings.Hotkey.Alt;
@@ -114,6 +116,12 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        if (!int.TryParse(ClipboardFallbackDelayTextBox.Text, out var clipboardFallbackDelayMs))
+        {
+            ShowValidationError("Clipboard fallback delay ms must be a number.");
+            return;
+        }
+
         Settings.Translation.Endpoint = EndpointTextBox.Text;
         Settings.Translation.Model = ModelComboBox.Text;
         Settings.Translation.ApiKey = ApiKeyPasswordBox.Password;
@@ -129,6 +137,8 @@ public partial class SettingsWindow : Window
         Settings.Translation.RepetitionPenalty = repetitionPenalty;
         Settings.Translation.EnableThinking = EnableThinkingCheckBox.IsChecked == true;
         Settings.Translation.IncludeReasoning = IncludeReasoningCheckBox.IsChecked == true;
+        Settings.Capture.UseClipboardFallback = ClipboardFallbackCheckBox.IsChecked == true;
+        Settings.Capture.ClipboardFallbackDelayMs = clipboardFallbackDelayMs;
 
         Settings.Hotkey.Ctrl = CtrlCheckBox.IsChecked == true;
         Settings.Hotkey.Alt = AltCheckBox.IsChecked == true;

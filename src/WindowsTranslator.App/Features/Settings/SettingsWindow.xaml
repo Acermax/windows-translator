@@ -95,6 +95,14 @@
                 <CheckBox x:Name="IncludeReasoningCheckBox" Content="Request reasoning field from vLLM" Margin="0,0,0,8" />
                 <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For Qwen3.6, thinking is controlled by chat_template_kwargs.enable_thinking. The app discards reasoning and displays only message.content." />
 
+                <TextBlock FontWeight="SemiBold" FontSize="16" Text="Capture" Margin="0,18,0,12" />
+                <CheckBox x:Name="ClipboardFallbackCheckBox" Content="Use Ctrl+C clipboard fallback for legacy apps" Margin="0,0,0,8" />
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock Text="Clipboard fallback delay ms" />
+                    <TextBox x:Name="ClipboardFallbackDelayTextBox" Margin="0,3,0,0" />
+                </StackPanel>
+                <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="Enable this for old apps such as Office 2007 when UI Automation cannot expose selected text. It temporarily copies the selection and restores the clipboard as best as Windows allows." />
+
                 <TextBlock FontWeight="SemiBold" FontSize="16" Text="Hotkey" Margin="0,18,0,12" />
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                     <CheckBox x:Name="CtrlCheckBox" Content="Ctrl" Margin="0,0,18,0" />

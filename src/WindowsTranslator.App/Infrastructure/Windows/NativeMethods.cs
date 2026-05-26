@@ -33,6 +33,9 @@ internal static class NativeMethods
     internal static extern IntPtr GetOpenClipboardWindow();
 
     [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint GetClipboardSequenceNumber();
+
+    [DllImport("user32.dll", SetLastError = true)]
     internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -92,6 +95,7 @@ internal static class NativeMethods
     internal static class VirtualKey
     {
         public const byte Control = 0x11;
+        public const byte C = 0x43;
         public const byte V = 0x56;
     }
 

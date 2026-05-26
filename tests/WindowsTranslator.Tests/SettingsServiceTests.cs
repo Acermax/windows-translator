@@ -21,6 +21,8 @@ public sealed class SettingsServiceTests
         Assert.Equal("UIAutomation", settings.Capture.Method);
         Assert.Equal(50, settings.Capture.FocusSettleDelayMs);
         Assert.Equal(1_500, settings.Capture.MaxAutomationElements);
+        Assert.False(settings.Capture.UseClipboardFallback);
+        Assert.Equal(160, settings.Capture.ClipboardFallbackDelayMs);
         Assert.Equal(0.6, settings.Translation.Temperature);
         Assert.Equal(0.95, settings.Translation.TopP);
         Assert.Equal(20, settings.Translation.TopK);
@@ -52,6 +54,8 @@ public sealed class SettingsServiceTests
         settings.Capture.Method = "  UIAutomation  ";
         settings.Capture.FocusSettleDelayMs = -1;
         settings.Capture.MaxAutomationElements = 5;
+        settings.Capture.UseClipboardFallback = true;
+        settings.Capture.ClipboardFallbackDelayMs = 10_000;
 
         await service.SaveAsync(settings);
         var loaded = await service.LoadAsync();
@@ -71,6 +75,8 @@ public sealed class SettingsServiceTests
         Assert.Equal("UIAutomation", loaded.Capture.Method);
         Assert.Equal(0, loaded.Capture.FocusSettleDelayMs);
         Assert.Equal(10, loaded.Capture.MaxAutomationElements);
+        Assert.True(loaded.Capture.UseClipboardFallback);
+        Assert.Equal(2_000, loaded.Capture.ClipboardFallbackDelayMs);
     }
 
     [Fact]

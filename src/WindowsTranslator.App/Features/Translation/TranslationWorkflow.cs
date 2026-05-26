@@ -43,7 +43,7 @@ internal sealed class TranslationWorkflow : IDisposable
             var selectedText = await _selectedTextService.GetSelectedTextAsync(settings.Capture, cursorPosition, cancellationToken);
             if (string.IsNullOrWhiteSpace(selectedText))
             {
-                _popupService.ShowError(cursorPosition, "No selected text or editable value was exposed by Windows UI Automation for the active app.");
+                _popupService.ShowError(cursorPosition, "No selected text was exposed by Windows UI Automation or clipboard fallback for the active app.");
                 return;
             }
 

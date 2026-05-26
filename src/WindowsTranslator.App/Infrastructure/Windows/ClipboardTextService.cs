@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows;
 using System.Windows.Interop;
 
 namespace WindowsTranslator.App.Infrastructure.Windows;
@@ -43,6 +44,42 @@ internal static class ClipboardTextService
         }
     }
 
+    public static async Task<string?> CopySelectedTextAsync(
+        TimeSpan copyDelay,
+        int maxCharacters,
+        CancellationToken cancellationToken)
+    {
+        var previousText = TryGetTextRaw();
+
+        try
+        {
+            SendCtrlC();
+            await Task.Delay(copyDelay, cancellationToken);
+
+            for (var attempt = 0; attempt <= RetryDelays.Length; attempt++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var text = TryGetText(maxCharacters);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text;
+                }
+
+                if (attempt < RetryDelays.Length)
+                {
+                    await Task.Delay(RetryDelays[attempt], cancellationToken);
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            await TryRestoreTextAsync(previousText);
+        }
+    }
+
     private static Win32Exception? TrySetText(string text)
     {
         var ownerWindowHandle = GetOwnerWindowHandle();
@@ -60,6 +97,92 @@ internal static class ClipboardTextService
         {
             NativeMethods.CloseClipboard();
         }
+    }
+
+    private static async Task TryRestoreTextAsync(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        for (var attempt = 0; attempt <= RetryDelays.Length; attempt++)
+        {
+            try
+            {
+                await SetTextAsync(text, CancellationToken.None);
+                return;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            if (attempt < RetryDelays.Length)
+            {
+                await Task.Delay(RetryDelays[attempt]);
+            }
+        }
+    }
+
+    private static string? TryGetTextRaw()
+    {
+        try
+        {
+            return System.Windows.Clipboard.ContainsText(System.Windows.TextDataFormat.UnicodeText)
+                ? System.Windows.Clipboard.GetText(System.Windows.TextDataFormat.UnicodeText)
+                : null;
+        }
+        catch (ExternalException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (ThreadStateException)
+        {
+            return null;
+        }
+    }
+
+    private static string? TryGetText(int maxCharacters)
+    {
+        try
+        {
+            if (!System.Windows.Clipboard.ContainsText(System.Windows.TextDataFormat.UnicodeText))
+            {
+                return null;
+            }
+
+            var text = System.Windows.Clipboard.GetText(System.Windows.TextDataFormat.UnicodeText).Trim();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            return text.Length <= maxCharacters ? text : text[..maxCharacters];
+        }
+        catch (ExternalException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (ThreadStateException)
+        {
+            return null;
+        }
+    }
+
+    private static void SendCtrlC()
+    {
+        NativeMethods.keybd_event(NativeMethods.VirtualKey.Control, 0, 0, UIntPtr.Zero);
+        NativeMethods.keybd_event(NativeMethods.VirtualKey.C, 0, 0, UIntPtr.Zero);
+        NativeMethods.keybd_event(NativeMethods.VirtualKey.C, 0, NativeMethods.KeyEvent.KeyUp, UIntPtr.Zero);
+        NativeMethods.keybd_event(NativeMethods.VirtualKey.Control, 0, NativeMethods.KeyEvent.KeyUp, UIntPtr.Zero);
     }
 
     private static IntPtr GetOwnerWindowHandle()

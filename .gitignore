@@ -2,12 +2,14 @@ bin/
 obj/
 .vs/
 .vscode/
+AGENTS.md
 *.user
 *.suo
 TestResults/
 .dotnet/
 .nuget/
 publish/
+dist/
 .env
 .env.*
 !.env.example

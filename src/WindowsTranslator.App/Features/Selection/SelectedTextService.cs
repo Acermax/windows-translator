@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
 using System.Windows.Automation.Text;
@@ -22,7 +23,27 @@ internal sealed class SelectedTextService
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        return TryGetSelectedText(settings, cursorPosition, cancellationToken);
+        var selectedText = TryGetSelectedText(settings, cursorPosition, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(selectedText))
+        {
+            return selectedText;
+        }
+
+        var foregroundOfficeApp = GetForegroundOfficeApp();
+        if (foregroundOfficeApp == OfficeApp.Excel)
+        {
+            return ExcelSelectionService.TryGetActiveCellText(settings.MaxSelectedTextCharacters);
+        }
+
+        if (!settings.UseClipboardFallback && foregroundOfficeApp == OfficeApp.None)
+        {
+            return null;
+        }
+
+        return await ClipboardTextService.CopySelectedTextAsync(
+            TimeSpan.FromMilliseconds(settings.ClipboardFallbackDelayMs),
+            settings.MaxSelectedTextCharacters,
+            cancellationToken);
     }
 
     private static string? TryGetSelectedText(
@@ -398,6 +419,63 @@ internal sealed class SelectedTextService
     private static string ReadRange(TextPatternRange range, int maxCharacters)
     {
         return maxCharacters <= 0 ? string.Empty : range.GetText(maxCharacters);
+    }
+
+    private static OfficeApp GetForegroundOfficeApp()
+    {
+        try
+        {
+            var handle = NativeMethods.GetForegroundWindow();
+            if (handle == IntPtr.Zero)
+            {
+                return OfficeApp.None;
+            }
+
+            _ = NativeMethods.GetWindowThreadProcessId(handle, out var processId);
+            if (processId == 0)
+            {
+                return OfficeApp.None;
+            }
+
+            using var process = Process.GetProcessById((int)processId);
+            return GetOfficeApp(process.ProcessName);
+        }
+        catch (ArgumentException)
+        {
+            return OfficeApp.None;
+        }
+        catch (InvalidOperationException)
+        {
+            return OfficeApp.None;
+        }
+    }
+
+    private static OfficeApp GetOfficeApp(string processName)
+    {
+        if (string.Equals(processName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+        {
+            return OfficeApp.Excel;
+        }
+
+        if (string.Equals(processName, "WINWORD", StringComparison.OrdinalIgnoreCase))
+        {
+            return OfficeApp.Word;
+        }
+
+        if (string.Equals(processName, "OUTLOOK", StringComparison.OrdinalIgnoreCase))
+        {
+            return OfficeApp.Outlook;
+        }
+
+        return OfficeApp.None;
+    }
+
+    private enum OfficeApp
+    {
+        None,
+        Excel,
+        Word,
+        Outlook
     }
 
     private static AutomationElement? TryGetElementFromPoint(System.Windows.Point point)
