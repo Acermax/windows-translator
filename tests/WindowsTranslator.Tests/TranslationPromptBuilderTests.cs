@@ -28,6 +28,21 @@ public sealed class TranslationPromptBuilderTests
     }
 
     [Fact]
+    public void BuildUserPrompt_ForMultilineText_PreservesLineBreaksAndParagraphs()
+    {
+        const string text = "Linea uno\r\n\r\n- punto dos\r\n  detalle";
+
+        var prompt = TranslationPromptBuilder.BuildUserPrompt(
+            text,
+            "English",
+            TextProcessingAction.TranslateToEnglish);
+
+        Assert.Contains("Do not merge separate lines or paragraphs", prompt);
+        Assert.Contains("Keep empty lines empty", prompt);
+        Assert.Contains(text, prompt);
+    }
+
+    [Fact]
     public void BuildUserPrompt_ForGrammarCorrection_KeepsOriginalLanguage()
     {
         var prompt = TranslationPromptBuilder.BuildUserPrompt(

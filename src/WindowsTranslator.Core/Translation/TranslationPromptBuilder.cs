@@ -2,7 +2,9 @@ namespace WindowsTranslator.Core.Translation;
 
 public static class TranslationPromptBuilder
 {
-    public const string SystemPrompt = "You are a precise text editing and translation engine. Return only the requested text, with no explanations.";
+    public const string SystemPrompt = "You are a precise text editing and translation engine. Return only the requested text, with no explanations. Preserve the user's line breaks and paragraph structure.";
+
+    private const string FormattingInstruction = "Preserve paragraph breaks, line breaks, bullet/list structure, indentation, and spacing wherever possible. Do not merge separate lines or paragraphs. Keep empty lines empty.";
 
     public static string BuildUserPrompt(string text, string targetLanguage)
     {
@@ -28,7 +30,8 @@ public static class TranslationPromptBuilder
     {
         return $$"""
 Translate the following text to {{targetLanguage}}.
-Preserve meaning, tone, names, URLs, code identifiers, and basic formatting.
+Preserve meaning, tone, names, URLs, and code identifiers.
+{{FormattingInstruction}}
 Return only the translation.
 
 Text:
@@ -40,7 +43,8 @@ Text:
     {
         return $$"""
 Translate the following text to English.
-Preserve meaning, tone, names, URLs, code identifiers, and basic formatting.
+Preserve meaning, tone, names, URLs, and code identifiers.
+{{FormattingInstruction}}
 Do not keep the original language unless the text is already English.
 Return only the English translation.
 
@@ -53,7 +57,8 @@ Text:
     {
         return $$"""
 Correct grammar, spelling, punctuation, and small typos in the following text.
-Keep the original language, meaning, tone, names, URLs, code identifiers, and basic formatting.
+Keep the original language, meaning, tone, names, URLs, and code identifiers.
+{{FormattingInstruction}}
 Do not rewrite style unless needed for correctness.
 Return only the corrected text.
 
@@ -66,7 +71,8 @@ Text:
     {
         return $$"""
 Improve the following text for clarity, natural phrasing, and readability.
-Keep the original language, meaning, tone, names, URLs, code identifiers, and basic formatting.
+Keep the original language, meaning, tone, names, URLs, and code identifiers.
+{{FormattingInstruction}}
 Return only the improved text.
 
 Text:
