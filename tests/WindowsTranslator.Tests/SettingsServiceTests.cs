@@ -15,6 +15,7 @@ public sealed class SettingsServiceTests
 
         Assert.True(File.Exists(settingsPath));
         Assert.Equal("http://localhost:8000/v1/chat/completions", settings.Translation.Endpoint);
+        Assert.Equal(TranslationProvider.OpenAiCompatible, settings.Translation.Provider);
         Assert.Equal("Z", settings.Hotkey.Key);
         Assert.True(settings.Hotkey.Ctrl);
         Assert.True(settings.Hotkey.Shift);
@@ -31,6 +32,11 @@ public sealed class SettingsServiceTests
         Assert.Equal(1.0, settings.Translation.RepetitionPenalty);
         Assert.False(settings.Translation.IncludeReasoning);
         Assert.False(settings.Translation.EnableThinking);
+        Assert.Equal("https://auth.openai.com", settings.Translation.CodexOAuth.Issuer);
+        Assert.Equal("https://chatgpt.com/backend-api/codex/responses", settings.Translation.CodexOAuth.Endpoint);
+        Assert.Equal("gpt-5.5", settings.Translation.CodexOAuth.Model);
+        Assert.Equal(CodexReasoningEffort.None, settings.Translation.CodexOAuth.ReasoningEffort);
+        Assert.Equal(1455, settings.Translation.CodexOAuth.CallbackPort);
     }
 
     [Fact]
@@ -40,7 +46,13 @@ public sealed class SettingsServiceTests
         var service = new SettingsService(settingsPath);
         var settings = AppSettings.CreateDefault();
         settings.Translation.Endpoint = "  http://localhost:8001/v1/chat/completions  ";
+        settings.Translation.Provider = "codexoauth";
         settings.Translation.Model = "  test-model  ";
+        settings.Translation.CodexOAuth.Issuer = "  https://auth.openai.com/  ";
+        settings.Translation.CodexOAuth.Endpoint = "  https://chatgpt.com/backend-api/codex/responses  ";
+        settings.Translation.CodexOAuth.Model = "  gpt-test-codex  ";
+        settings.Translation.CodexOAuth.ReasoningEffort = "  XHIGH  ";
+        settings.Translation.CodexOAuth.CallbackPort = 100;
         settings.Translation.Temperature = 5;
         settings.Translation.TopP = 2;
         settings.Translation.TopK = -1;
@@ -61,7 +73,13 @@ public sealed class SettingsServiceTests
         var loaded = await service.LoadAsync();
 
         Assert.Equal("http://localhost:8001/v1/chat/completions", loaded.Translation.Endpoint);
+        Assert.Equal(TranslationProvider.CodexOAuth, loaded.Translation.Provider);
         Assert.Equal("test-model", loaded.Translation.Model);
+        Assert.Equal("https://auth.openai.com", loaded.Translation.CodexOAuth.Issuer);
+        Assert.Equal("https://chatgpt.com/backend-api/codex/responses", loaded.Translation.CodexOAuth.Endpoint);
+        Assert.Equal("gpt-test-codex", loaded.Translation.CodexOAuth.Model);
+        Assert.Equal(CodexReasoningEffort.ExtraHigh, loaded.Translation.CodexOAuth.ReasoningEffort);
+        Assert.Equal(1024, loaded.Translation.CodexOAuth.CallbackPort);
         Assert.Equal(2, loaded.Translation.Temperature);
         Assert.Equal(1, loaded.Translation.TopP);
         Assert.Equal(0, loaded.Translation.TopK);
@@ -88,6 +106,19 @@ public sealed class SettingsServiceTests
         var service = new SettingsService(settingsPath);
 
         await Assert.ThrowsAsync<JsonException>(() => service.LoadAsync());
+    }
+
+    [Theory]
+    [InlineData("gpt-5.2-codex")]
+    [InlineData("gpt-5-codex")]
+    public void Normalize_MapsLegacyCodexModelsToCurrentDefault(string legacyModel)
+    {
+        var settings = AppSettings.CreateDefault();
+        settings.Translation.CodexOAuth.Model = legacyModel;
+
+        settings.Normalize();
+
+        Assert.Equal("gpt-5.5", settings.Translation.CodexOAuth.Model);
     }
 
     private static string CreateTempSettingsPath()

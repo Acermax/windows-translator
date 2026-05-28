@@ -1,14 +1,14 @@
 # Windows Translator
 
-Small Windows desktop translator for selected text. Select text in another app, press `Ctrl+Shift+Z`, send the text to an OpenAI-compatible `/v1/chat/completions` endpoint, and show the translation in a floating popup.
+Small Windows desktop translator for selected text. Select text in another app, press `Ctrl+Shift+Z`, send the text to the configured AI provider, and show the translation in a floating popup.
 
 ## Features
 
 - Windows tray app built with .NET 8 and WPF.
 - Global hotkey, default `Ctrl+Shift+Z`.
 - Selected-text capture through Windows UI Automation, with clipboard fallback for apps that do not expose selected text reliably.
-- OpenAI-compatible translation endpoint support, including local vLLM servers.
-- Configurable endpoint, model, API key, target language, sampling parameters, and Qwen thinking mode.
+- Provider selector for OpenAI-compatible endpoints or Codex OAuth with ChatGPT sign-in.
+- Configurable endpoint, model, API key, target language, sampling parameters, and Qwen thinking mode for OpenAI-compatible providers.
 - Movable popup with translate, English translation, grammar, improve, copy, replace, close, and settings buttons.
 
 ## Text Capture And Clipboard Behavior
@@ -23,7 +23,7 @@ When replacing selected text, the app writes the translated/corrected text to th
 
 - Windows.
 - .NET 8 SDK.
-- A running OpenAI-compatible endpoint, for example vLLM at `http://localhost:8000/v1/chat/completions`.
+- Either a running OpenAI-compatible endpoint, for example vLLM at `http://localhost:8000/v1/chat/completions`, or a ChatGPT account with Codex access for Codex OAuth.
 
 ## Commands
 
@@ -42,11 +42,13 @@ When launched from a terminal, `Ctrl+C` closes the tray app cleanly. If a build 
 
 On first run the app creates `%APPDATA%\WindowsTranslator\settings.json` with defaults.
 
+- Set `translation.provider` to `OpenAiCompatible` or `CodexOAuth`.
 - Set `translation.endpoint` to your OpenAI-compatible chat completions endpoint.
 - Set `translation.model` to the model name served by that endpoint.
 - Leave `translation.apiKey` empty if your local endpoint does not require bearer auth.
 - Configure `translation.enableThinking` and `translation.includeReasoning` for Qwen reasoning models.
 - Configure sampling with `temperature`, `topP`, `topK`, `minP`, `presencePenalty`, and `repetitionPenalty`.
+- For Codex OAuth, sign in from Settings and choose the model plus Thinking level. Use `Off` / `reasoningEffort: "none"` for fastest translation. OAuth credentials are stored for the current Windows user in `%APPDATA%\WindowsTranslator\codex-oauth.json` using Windows data protection.
 
 Do not commit local settings files containing API keys. `.gitignore` excludes common local config files such as `settings.json`, `appsettings.json`, `.env`, and `*.local.json`.
 

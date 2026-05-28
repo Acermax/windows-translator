@@ -71,11 +71,15 @@ public sealed class CaptureSettings
 
 public sealed class TranslationSettings
 {
+    public string Provider { get; set; } = TranslationProvider.OpenAiCompatible;
+
     public string Endpoint { get; set; } = "http://localhost:8000/v1/chat/completions";
 
     public string Model { get; set; } = "local-model";
 
     public string ApiKey { get; set; } = string.Empty;
+
+    public CodexOAuthSettings CodexOAuth { get; set; } = new();
 
     public string TargetLanguage { get; set; } = "Spanish";
 
@@ -103,6 +107,10 @@ public sealed class TranslationSettings
 
     public void Normalize()
     {
+        Provider = TranslationProvider.Normalize(Provider);
+        CodexOAuth ??= new CodexOAuthSettings();
+        CodexOAuth.Normalize();
+
         if (string.IsNullOrWhiteSpace(Endpoint))
         {
             Endpoint = "http://localhost:8000/v1/chat/completions";
@@ -131,5 +139,98 @@ public sealed class TranslationSettings
         TimeoutSeconds = Math.Clamp(TimeoutSeconds, 1, 300);
         MaxInputCharacters = Math.Clamp(MaxInputCharacters, 100, 100_000);
         MaxOutputTokens = Math.Clamp(MaxOutputTokens, 64, 32_768);
+    }
+}
+
+public static class TranslationProvider
+{
+    public const string OpenAiCompatible = "OpenAiCompatible";
+
+    public const string CodexOAuth = "CodexOAuth";
+
+    public static string Normalize(string? provider)
+    {
+        if (string.Equals(provider, CodexOAuth, StringComparison.OrdinalIgnoreCase))
+        {
+            return CodexOAuth;
+        }
+
+        return OpenAiCompatible;
+    }
+}
+
+public sealed class CodexOAuthSettings
+{
+    public string Issuer { get; set; } = "https://auth.openai.com";
+
+    public string ClientId { get; set; } = "app_EMoamEEZ73f0CkXaXp7hrann";
+
+    public string Endpoint { get; set; } = "https://chatgpt.com/backend-api/codex/responses";
+
+    public string Model { get; set; } = "gpt-5.5";
+
+    public string ReasoningEffort { get; set; } = CodexReasoningEffort.None;
+
+    public int CallbackPort { get; set; } = 1455;
+
+    public void Normalize()
+    {
+        if (string.IsNullOrWhiteSpace(Issuer))
+        {
+            Issuer = "https://auth.openai.com";
+        }
+
+        if (string.IsNullOrWhiteSpace(ClientId))
+        {
+            ClientId = "app_EMoamEEZ73f0CkXaXp7hrann";
+        }
+
+        if (string.IsNullOrWhiteSpace(Endpoint))
+        {
+            Endpoint = "https://chatgpt.com/backend-api/codex/responses";
+        }
+
+        if (string.IsNullOrWhiteSpace(Model))
+        {
+            Model = "gpt-5.5";
+        }
+
+        Issuer = Issuer.Trim().TrimEnd('/');
+        ClientId = ClientId.Trim();
+        Endpoint = Endpoint.Trim();
+        Model = Model.Trim();
+        if (string.Equals(Model, "gpt-5.2-codex", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Model, "gpt-5-codex", StringComparison.OrdinalIgnoreCase))
+        {
+            Model = "gpt-5.5";
+        }
+
+        ReasoningEffort = CodexReasoningEffort.Normalize(ReasoningEffort);
+        CallbackPort = Math.Clamp(CallbackPort, 1024, 65_535);
+    }
+}
+
+public static class CodexReasoningEffort
+{
+    public const string None = "none";
+
+    public const string Low = "low";
+
+    public const string Medium = "medium";
+
+    public const string High = "high";
+
+    public const string ExtraHigh = "xhigh";
+
+    public static string Normalize(string? effort)
+    {
+        return effort?.Trim().ToLowerInvariant() switch
+        {
+            Low => Low,
+            Medium => Medium,
+            High => High,
+            ExtraHigh => ExtraHigh,
+            _ => None
+        };
     }
 }

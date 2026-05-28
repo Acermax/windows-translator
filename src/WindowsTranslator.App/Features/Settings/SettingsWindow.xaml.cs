@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http;
 using System.Windows;
+using WindowsTranslator.App.Features.Codex;
 using WindowsTranslator.Core.Settings;
 using WindowsTranslator.Core.Translation;
 
@@ -8,12 +9,24 @@ namespace WindowsTranslator.App.Features.Settings;
 
 public partial class SettingsWindow : Window
 {
+    private static readonly string[] DefaultCodexModels =
+    [
+        "gpt-5.5",
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.3-codex",
+        "gpt-5.2"
+    ];
+
     private CancellationTokenSource? _modelsCancellation;
+    private readonly CodexOAuthTokenStore _codexTokenStore = new();
+    private readonly CodexOAuthLoginService _codexLoginService;
 
     public SettingsWindow(AppSettings settings)
     {
         Settings = settings;
         Settings.Normalize();
+        _codexLoginService = new CodexOAuthLoginService(_codexTokenStore);
         InitializeComponent();
         LoadSettings();
         Loaded += SettingsWindow_Loaded;
@@ -23,11 +36,24 @@ public partial class SettingsWindow : Window
 
     private void LoadSettings()
     {
+        ProviderComboBox.SelectedValue = Settings.Translation.Provider;
+        if (ProviderComboBox.SelectedValue is null)
+        {
+            ProviderComboBox.SelectedIndex = 0;
+        }
+
         EndpointTextBox.Text = Settings.Translation.Endpoint;
         ApiKeyPasswordBox.Password = Settings.Translation.ApiKey;
         ModelComboBox.Items.Add(Settings.Translation.Model);
         ModelComboBox.Text = Settings.Translation.Model;
         ModelsStatusTextBlock.Text = "Refresh to load models from the configured endpoint.";
+        LoadCodexModels(Settings.Translation.CodexOAuth.Model);
+        CodexReasoningEffortComboBox.SelectedValue = Settings.Translation.CodexOAuth.ReasoningEffort;
+        if (CodexReasoningEffortComboBox.SelectedValue is null)
+        {
+            CodexReasoningEffortComboBox.SelectedIndex = 0;
+        }
+
         TargetLanguageTextBox.Text = Settings.Translation.TargetLanguage;
         TimeoutTextBox.Text = Settings.Translation.TimeoutSeconds.ToString();
         MaxInputTextBox.Text = Settings.Translation.MaxInputCharacters.ToString();
@@ -48,16 +74,67 @@ public partial class SettingsWindow : Window
         ShiftCheckBox.IsChecked = Settings.Hotkey.Shift;
         WinCheckBox.IsChecked = Settings.Hotkey.Win;
         HotkeyKeyTextBox.Text = Settings.Hotkey.Key;
+        UpdateProviderPanels();
+        UpdateCodexStatus();
     }
 
     private async void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        await RefreshModelsAsync(showSuccess: false);
+        if (SelectedProvider == TranslationProvider.OpenAiCompatible)
+        {
+            await RefreshModelsAsync(showSuccess: false);
+        }
     }
 
     private async void RefreshModelsButton_Click(object sender, RoutedEventArgs e)
     {
         await RefreshModelsAsync(showSuccess: true);
+    }
+
+    private void ProviderComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        UpdateProviderPanels();
+    }
+
+    private async void CodexLoginButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryCreateCodexSettingsFromUi(out var codexSettings))
+        {
+            return;
+        }
+
+        CodexLoginButton.IsEnabled = false;
+        CodexLogoutButton.IsEnabled = false;
+        CodexStatusTextBlock.Text = "Opening browser for ChatGPT sign-in...";
+
+        try
+        {
+            var tokens = await _codexLoginService.SignInAsync(codexSettings, CancellationToken.None);
+            Settings.Translation.CodexOAuth = codexSettings;
+            UpdateCodexStatus(tokens);
+        }
+        catch (Exception ex) when (ex is TranslationException or HttpRequestException or TaskCanceledException or OperationCanceledException or InvalidOperationException)
+        {
+            CodexStatusTextBlock.Text = $"Could not sign in: {ex.Message}";
+        }
+        finally
+        {
+            CodexLoginButton.IsEnabled = true;
+            CodexLogoutButton.IsEnabled = HasCodexTokens();
+        }
+    }
+
+    private void CodexLogoutButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _codexTokenStore.Delete();
+            UpdateCodexStatus();
+        }
+        catch (TranslationException ex)
+        {
+            CodexStatusTextBlock.Text = ex.Message;
+        }
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -122,9 +199,12 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        Settings.Translation.Provider = SelectedProvider;
         Settings.Translation.Endpoint = EndpointTextBox.Text;
         Settings.Translation.Model = ModelComboBox.Text;
         Settings.Translation.ApiKey = ApiKeyPasswordBox.Password;
+        Settings.Translation.CodexOAuth.Model = CodexModelComboBox.Text;
+        Settings.Translation.CodexOAuth.ReasoningEffort = SelectedCodexReasoningEffort;
         Settings.Translation.TargetLanguage = TargetLanguageTextBox.Text;
         Settings.Translation.TimeoutSeconds = timeoutSeconds;
         Settings.Translation.MaxInputCharacters = maxInputCharacters;
@@ -166,6 +246,12 @@ public partial class SettingsWindow : Window
 
     private async Task RefreshModelsAsync(bool showSuccess)
     {
+        if (SelectedProvider != TranslationProvider.OpenAiCompatible)
+        {
+            ModelsStatusTextBlock.Text = "Codex OAuth models are selected from the Codex settings section.";
+            return;
+        }
+
         _modelsCancellation?.Cancel();
         _modelsCancellation?.Dispose();
         _modelsCancellation = new CancellationTokenSource();
@@ -233,6 +319,107 @@ public partial class SettingsWindow : Window
 
         settings.Normalize();
         return settings;
+    }
+
+    private string SelectedProvider => ProviderComboBox.SelectedValue?.ToString() ?? TranslationProvider.OpenAiCompatible;
+
+    private void UpdateProviderPanels()
+    {
+        if (OpenAiProviderPanel is null
+            || CodexProviderPanel is null
+            || OpenAiAdvancedPanel is null
+            || SettingsHintTextBlock is null)
+        {
+            return;
+        }
+
+        var isOpenAiCompatible = SelectedProvider == TranslationProvider.OpenAiCompatible;
+        OpenAiProviderPanel.Visibility = isOpenAiCompatible ? Visibility.Visible : Visibility.Collapsed;
+        OpenAiAdvancedPanel.Visibility = isOpenAiCompatible ? Visibility.Visible : Visibility.Collapsed;
+        CodexProviderPanel.Visibility = isOpenAiCompatible ? Visibility.Collapsed : Visibility.Visible;
+        SettingsHintTextBlock.Text = isOpenAiCompatible
+            ? "For local vLLM without auth, leave API key empty. Use Refresh to load served models, or type a model name manually."
+            : "Codex OAuth uses your ChatGPT sign-in. Set Thinking to Off for faster translation.";
+
+        if (!isOpenAiCompatible)
+        {
+            UpdateCodexStatus();
+        }
+    }
+
+    private void LoadCodexModels(string currentModel)
+    {
+        CodexModelComboBox.Items.Clear();
+        foreach (var model in DefaultCodexModels)
+        {
+            CodexModelComboBox.Items.Add(model);
+        }
+
+        CodexModelComboBox.Text = DefaultCodexModels.Contains(currentModel)
+            ? currentModel
+            : DefaultCodexModels[0];
+    }
+
+    private string SelectedCodexReasoningEffort =>
+        CodexReasoningEffortComboBox.SelectedValue?.ToString() ?? CodexReasoningEffort.None;
+
+    private bool TryCreateCodexSettingsFromUi(out CodexOAuthSettings codexSettings)
+    {
+        codexSettings = new CodexOAuthSettings
+        {
+            Issuer = Settings.Translation.CodexOAuth.Issuer,
+            ClientId = Settings.Translation.CodexOAuth.ClientId,
+            Endpoint = Settings.Translation.CodexOAuth.Endpoint,
+            Model = CodexModelComboBox.Text,
+            ReasoningEffort = SelectedCodexReasoningEffort,
+            CallbackPort = Settings.Translation.CodexOAuth.CallbackPort
+        };
+        codexSettings.Normalize();
+        return true;
+    }
+
+    private void UpdateCodexStatus()
+    {
+        try
+        {
+            UpdateCodexStatus(_codexTokenStore.Load());
+        }
+        catch (TranslationException ex)
+        {
+            CodexStatusTextBlock.Text = ex.Message;
+            CodexLogoutButton.IsEnabled = true;
+        }
+    }
+
+    private void UpdateCodexStatus(CodexOAuthTokenSet? tokens)
+    {
+        if (tokens is null)
+        {
+            CodexStatusTextBlock.Text = "Not signed in.";
+            CodexLogoutButton.IsEnabled = false;
+            return;
+        }
+
+        var identity = !string.IsNullOrWhiteSpace(tokens.Email)
+            ? tokens.Email
+            : tokens.AccountId;
+        var expires = tokens.ExpiresAtUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
+        CodexStatusTextBlock.Text = string.IsNullOrWhiteSpace(identity)
+            ? $"Signed in. Token expires {expires}."
+            : $"Signed in as {identity}. Token expires {expires}.";
+        CodexLogoutButton.IsEnabled = true;
+    }
+
+    private bool HasCodexTokens()
+    {
+        try
+        {
+            return _codexTokenStore.Load() is not null;
+        }
+        catch (TranslationException)
+        {
+            return true;
+        }
     }
 
     private static void ShowValidationError(string message)

@@ -1,4 +1,5 @@
 using System.Net.Http;
+using WindowsTranslator.App.Features.Codex;
 using WindowsTranslator.App.Features.Popup;
 using WindowsTranslator.App.Features.Selection;
 using WindowsTranslator.App.Infrastructure.Windows;
@@ -142,12 +143,25 @@ internal sealed class TranslationWorkflow : IDisposable
         timeout.CancelAfter(TimeSpan.FromSeconds(settings.Translation.TimeoutSeconds));
 
         using var httpClient = new HttpClient();
-        var translator = new OpenAiCompatibleTranslationService(httpClient, settings.Translation);
+        var translator = CreateTranslationService(httpClient, settings.Translation);
         var result = await translator.TranslateAsync(
             new TranslationRequest(activeSelection.SourceText, Action: action),
             timeout.Token);
         _currentReplacementText = result.Text;
         _popupService.ShowResult(result, action);
+    }
+
+    private static ITranslationService CreateTranslationService(HttpClient httpClient, TranslationSettings settings)
+    {
+        settings.Normalize();
+        if (settings.Provider == TranslationProvider.CodexOAuth)
+        {
+            var tokenStore = new CodexOAuthTokenStore();
+            var credentialProvider = new CodexOAuthCredentialProvider(tokenStore, httpClient);
+            return new CodexOAuthTranslationService(httpClient, settings, credentialProvider);
+        }
+
+        return new OpenAiCompatibleTranslationService(httpClient, settings);
     }
 
     private static string ToFriendlyMessage(Exception exception)

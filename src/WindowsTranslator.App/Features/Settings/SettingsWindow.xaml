@@ -15,34 +15,82 @@
             <StackPanel>
                 <TextBlock FontWeight="SemiBold" FontSize="16" Text="Translation" Margin="0,0,0,12" />
 
-                <TextBlock Text="Endpoint (/v1 or chat completions)" />
-                <TextBox x:Name="EndpointTextBox" Margin="0,3,0,10" />
+                <TextBlock Text="Provider" />
+                <ComboBox x:Name="ProviderComboBox"
+                          Margin="0,3,0,14"
+                          SelectedValuePath="Tag"
+                          SelectionChanged="ProviderComboBox_SelectionChanged">
+                    <ComboBoxItem Content="OpenAI-compatible" Tag="OpenAiCompatible" />
+                    <ComboBoxItem Content="Codex OAuth" Tag="CodexOAuth" />
+                </ComboBox>
 
-                <TextBlock Text="API key" />
-                <PasswordBox x:Name="ApiKeyPasswordBox" Margin="0,3,0,10" />
+                <StackPanel x:Name="OpenAiProviderPanel">
+                    <TextBlock Text="Endpoint (/v1 or chat completions)" />
+                    <TextBox x:Name="EndpointTextBox" Margin="0,3,0,10" />
 
-                <TextBlock Text="Model" />
-                <Grid Margin="0,3,0,4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ComboBox x:Name="ModelComboBox"
+                    <TextBlock Text="API key" />
+                    <PasswordBox x:Name="ApiKeyPasswordBox" Margin="0,3,0,10" />
+
+                    <TextBlock Text="Model" />
+                    <Grid Margin="0,3,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="ModelComboBox"
+                                  IsEditable="True"
+                                  IsTextSearchEnabled="True"
+                                  StaysOpenOnEdit="True"
+                                  VerticalContentAlignment="Center" />
+                        <Button x:Name="RefreshModelsButton"
+                                Grid.Column="1"
+                                Content="Refresh"
+                                MinWidth="86"
+                                Margin="8,0,0,0"
+                                Click="RefreshModelsButton_Click" />
+                    </Grid>
+                    <TextBlock x:Name="ModelsStatusTextBlock"
+                               Foreground="#666666"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10" />
+                </StackPanel>
+
+                <StackPanel x:Name="CodexProviderPanel">
+                    <TextBlock x:Name="CodexStatusTextBlock"
+                               Foreground="#666666"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button x:Name="CodexLoginButton"
+                                Content="Sign in with ChatGPT"
+                                MinWidth="150"
+                                Margin="0,0,8,0"
+                                Click="CodexLoginButton_Click" />
+                        <Button x:Name="CodexLogoutButton"
+                                Content="Sign out"
+                                MinWidth="90"
+                                Click="CodexLogoutButton_Click" />
+                    </StackPanel>
+
+                    <TextBlock Text="Codex model" />
+                    <ComboBox x:Name="CodexModelComboBox"
+                              Margin="0,3,0,10"
                               IsEditable="True"
                               IsTextSearchEnabled="True"
                               StaysOpenOnEdit="True"
                               VerticalContentAlignment="Center" />
-                    <Button x:Name="RefreshModelsButton"
-                            Grid.Column="1"
-                            Content="Refresh"
-                            MinWidth="86"
-                            Margin="8,0,0,0"
-                            Click="RefreshModelsButton_Click" />
-                </Grid>
-                <TextBlock x:Name="ModelsStatusTextBlock"
-                           Foreground="#666666"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,10" />
+
+                    <TextBlock Text="Thinking" />
+                    <ComboBox x:Name="CodexReasoningEffortComboBox"
+                              Margin="0,3,0,10"
+                              SelectedValuePath="Tag">
+                        <ComboBoxItem Content="Off" Tag="none" />
+                        <ComboBoxItem Content="Low" Tag="low" />
+                        <ComboBoxItem Content="Medium" Tag="medium" />
+                        <ComboBoxItem Content="High" Tag="high" />
+                        <ComboBoxItem Content="Extra high" Tag="xhigh" />
+                    </ComboBox>
+                </StackPanel>
 
                 <TextBlock Text="Target language" />
                 <TextBox x:Name="TargetLanguageTextBox" Margin="0,3,0,10" />
@@ -62,38 +110,40 @@
                     </StackPanel>
                 </UniformGrid>
 
-                <TextBlock FontWeight="SemiBold" FontSize="16" Text="Sampling" Margin="0,12,0,12" />
-                <UniformGrid Columns="3" Margin="0,0,0,10">
-                    <StackPanel Margin="0,0,8,0">
-                        <TextBlock Text="Temperature" />
-                        <TextBox x:Name="TemperatureTextBox" Margin="0,3,0,0" />
-                    </StackPanel>
-                    <StackPanel Margin="8,0,8,0">
-                        <TextBlock Text="Top P" />
-                        <TextBox x:Name="TopPTextBox" Margin="0,3,0,0" />
-                    </StackPanel>
-                    <StackPanel Margin="8,0,0,0">
-                        <TextBlock Text="Top K" />
-                        <TextBox x:Name="TopKTextBox" Margin="0,3,0,0" />
-                    </StackPanel>
-                    <StackPanel Margin="0,10,8,0">
-                        <TextBlock Text="Min P" />
-                        <TextBox x:Name="MinPTextBox" Margin="0,3,0,0" />
-                    </StackPanel>
-                    <StackPanel Margin="8,10,8,0">
-                        <TextBlock Text="Presence penalty" />
-                        <TextBox x:Name="PresencePenaltyTextBox" Margin="0,3,0,0" />
-                    </StackPanel>
-                    <StackPanel Margin="8,10,0,0">
-                        <TextBlock Text="Repetition penalty" />
-                        <TextBox x:Name="RepetitionPenaltyTextBox" Margin="0,3,0,0" />
-                    </StackPanel>
-                </UniformGrid>
+                <StackPanel x:Name="OpenAiAdvancedPanel">
+                    <TextBlock FontWeight="SemiBold" FontSize="16" Text="Sampling" Margin="0,12,0,12" />
+                    <UniformGrid Columns="3" Margin="0,0,0,10">
+                        <StackPanel Margin="0,0,8,0">
+                            <TextBlock Text="Temperature" />
+                            <TextBox x:Name="TemperatureTextBox" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="8,0,8,0">
+                            <TextBlock Text="Top P" />
+                            <TextBox x:Name="TopPTextBox" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="8,0,0,0">
+                            <TextBlock Text="Top K" />
+                            <TextBox x:Name="TopKTextBox" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="0,10,8,0">
+                            <TextBlock Text="Min P" />
+                            <TextBox x:Name="MinPTextBox" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="8,10,8,0">
+                            <TextBlock Text="Presence penalty" />
+                            <TextBox x:Name="PresencePenaltyTextBox" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="8,10,0,0">
+                            <TextBlock Text="Repetition penalty" />
+                            <TextBox x:Name="RepetitionPenaltyTextBox" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </UniformGrid>
 
-                <TextBlock FontWeight="SemiBold" FontSize="16" Text="Reasoning" Margin="0,12,0,12" />
-                <CheckBox x:Name="EnableThinkingCheckBox" Content="Enable Qwen thinking" Margin="0,0,0,8" />
-                <CheckBox x:Name="IncludeReasoningCheckBox" Content="Request reasoning field from vLLM" Margin="0,0,0,8" />
-                <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For Qwen3.6, thinking is controlled by chat_template_kwargs.enable_thinking. The app discards reasoning and displays only message.content." />
+                    <TextBlock FontWeight="SemiBold" FontSize="16" Text="Reasoning" Margin="0,12,0,12" />
+                    <CheckBox x:Name="EnableThinkingCheckBox" Content="Enable Qwen thinking" Margin="0,0,0,8" />
+                    <CheckBox x:Name="IncludeReasoningCheckBox" Content="Request reasoning field from vLLM" Margin="0,0,0,8" />
+                    <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For Qwen3.6, thinking is controlled by chat_template_kwargs.enable_thinking. The app discards reasoning and displays only message.content." />
+                </StackPanel>
 
                 <TextBlock FontWeight="SemiBold" FontSize="16" Text="Capture" Margin="0,18,0,12" />
                 <CheckBox x:Name="ClipboardFallbackCheckBox" Content="Use Ctrl+C clipboard fallback for legacy apps" Margin="0,0,0,8" />
@@ -113,7 +163,7 @@
                     <TextBox x:Name="HotkeyKeyTextBox" Width="80" />
                 </StackPanel>
 
-                <TextBlock Foreground="#666666" TextWrapping="Wrap" Text="For local vLLM without auth, leave API key empty. Use Refresh to load served models, or type a model name manually." />
+                <TextBlock x:Name="SettingsHintTextBlock" Foreground="#666666" TextWrapping="Wrap" Text="For local vLLM without auth, leave API key empty. Use Refresh to load served models, or type a model name manually." />
             </StackPanel>
         </ScrollViewer>
 
