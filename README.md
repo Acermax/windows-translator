@@ -6,14 +6,18 @@ Small Windows desktop translator for selected text. Select text in another app, 
 
 - Windows tray app built with .NET 8 and WPF.
 - Global hotkey, default `Ctrl+Shift+Z`.
-- Non-invasive selected-text capture through Windows UI Automation.
+- Selected-text capture through Windows UI Automation, with clipboard fallback for apps that do not expose selected text reliably.
 - OpenAI-compatible translation endpoint support, including local vLLM servers.
 - Configurable endpoint, model, API key, target language, sampling parameters, and Qwen thinking mode.
-- Movable popup with copy, close, and settings buttons.
+- Movable popup with translate, English translation, grammar, improve, copy, replace, close, and settings buttons.
 
-## Important Limitation
+## Text Capture And Clipboard Behavior
 
-Windows does not expose a universal "selected text" API for every application. This app intentionally avoids simulating `Ctrl+C`, synthetic keyboard input, or automatic clipboard reads. If the active app does not expose selected text through Windows UI Automation, translation will not be available for that selection.
+Windows does not expose a universal "selected text" API for every application. This app first tries to read the active selection through Windows UI Automation. When that is not available, it can use a clipboard fallback: it simulates `Ctrl+C`, reads the copied Unicode text, and then tries to restore the previous clipboard text.
+
+The clipboard fallback is intended for legacy applications such as older Microsoft Office versions. It is best-effort: if another app owns or changes the clipboard at the same time, restoration may fail or only restore plain text. The fallback can be configured in settings.
+
+When replacing selected text, the app writes the translated/corrected text to the clipboard, focuses the original window, and simulates `Ctrl+V`.
 
 ## Requirements
 
